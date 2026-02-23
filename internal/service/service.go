@@ -16,10 +16,10 @@ func AddTask(title string, tasks *[]models.Task) {
 
 func ListTasks(tasks []models.Task) {
 	for _, task := range tasks {
+		status := "⏳"
 		if task.Done {
-			fmt.Printf("%d. [%s] %s\n", task.ID, task.Title, "успешно выполнена.")
-		} else {
-			fmt.Printf("%d. [%s] %s\n", task.ID, task.Title, "еще выполняется.")
+			status = "✅"
 		}
+		fmt.Printf("%d. %s %s\n", task.ID, status, task.Title)
 	}
 }

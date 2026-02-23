@@ -14,7 +14,7 @@ func SaveTasks(filename string, tasks []models.Task) error {
 		return err
 	}
 
-	err = os.WriteFile(filename, data, os.ModeAppend)
+	err = os.WriteFile(filename, data, 0644)
 
 	if err != nil {
 		return err
@@ -32,17 +32,17 @@ func LoadTasks(filename string) ([]models.Task, error) {
 		return nil, err
 	}
 
-	var task []models.Task
+	var tasks []models.Task
 
 	if len(data) == 0 {
-		return task, nil
+		return tasks, nil
 	}
 
-	err = json.Unmarshal(data, &task)
+	err = json.Unmarshal(data, &tasks)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return task, nil
+	return tasks, nil
 }

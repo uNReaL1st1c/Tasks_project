@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"taskTracker/src/internal/service"
 	"taskTracker/src/internal/storage"
 )
@@ -13,7 +13,8 @@ func main() {
 	tasks, err := storage.LoadTasks(fileName)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("Ошибка загрузки: %v.", err)
+		return
 	}
 
 	service.AddTask("Реализовать первый пункт", &tasks)
