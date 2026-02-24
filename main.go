@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"taskTracker/src/internal/service"
-	"taskTracker/src/internal/storage"
+	"github.com/uNReaL1st1c/Tasks_project/src/internal/service"
+	"github.com/uNReaL1st1c/Tasks_project/src/internal/storage"
 )
 
 var fileName = "tasks.json"

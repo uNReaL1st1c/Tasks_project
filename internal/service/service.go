@@ -2,7 +2,8 @@ package service
 
 import (
 	"fmt"
-	"taskTracker/src/internal/models" 
+
+	"github.com/uNReaL1st1c/Tasks_project/src/internal/models"
 )
 
 func AddTask(title string, tasks *[]models.Task) {

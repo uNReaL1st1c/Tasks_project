@@ -3,7 +3,8 @@ package storage
 import (
 	"encoding/json"
 	"os"
-	"taskTracker/src/internal/models"
+
+	"github.com/uNReaL1st1c/Tasks_project/src/internal/models"
 )
 
 func SaveTasks(filename string, tasks []models.Task) error {
