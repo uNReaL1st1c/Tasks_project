@@ -126,6 +126,9 @@ func markTaskAsDone() {
 		task := service.GetTaskByID(tasks, ID)
 		if task != nil {
 			task.Done = true
+			fmt.Printf("✅ Задача \"%s\" отмечена как выполненная\n", task.Title)
+		} else {
+			fmt.Printf("❌ Задача с ID %d не найдена\n", ID)
 		}
 	}
 	storage.SaveTasks(config.FileName, tasks)
@@ -142,22 +145,30 @@ func deleteTask() {
 		return
 	}
 
-	service.ListTasks(tasks)
-
 	fmt.Print("Введите ID задачи для удаления: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
 		text := scanner.Text()
-		ID, err := strconv.Atoi(text)
-		if err != nil {
-			fmt.Printf("Выбор неопределен %v", err)
+		ID, _ := strconv.Atoi(text)
+
+		task := service.GetTaskByID(tasks, ID)
+		if task == nil {
+			fmt.Printf("❌ Задача с ID %d не найдена\n", ID)
 			return
 		}
-		service.DeleteTask(&tasks, ID)
-	}
-	storage.SaveTasks(config.FileName, tasks)
 
-	fmt.Println()
+		fmt.Printf("Удалить задачу \"%s\"? (y/N): ", task.Title)
+		scanner.Scan()
+		confirm := scanner.Text()
+		if confirm != "y" && confirm != "Y" {
+			fmt.Println("❌ Удаление отменено")
+			return
+		}
+
+		service.DeleteTask(&tasks, ID)
+		storage.SaveTasks(config.FileName, tasks)
+		fmt.Printf("✅ Задача \"%s\" удалена\n", task.Title)
+	}
 
 }
 
