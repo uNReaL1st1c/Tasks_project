@@ -37,11 +37,29 @@ func ToDoTasks(tasks []models.Task) []models.Task {
 }
 
 func GetTaskByID(tasks []models.Task, ID int) *models.Task {
-	var task models.Task
-	for _, task := range tasks {
-		if task.ID == ID {
-			return &task
-		}
-	}
-	return &task
+    for i := range tasks {
+        if tasks[i].ID == ID {
+            return &tasks[i]
+        }
+    }
+    return nil 
+}
+
+func DeleteTask(tasks *[]models.Task, ID int) error {
+    if tasks == nil {
+        return fmt.Errorf("tasks slice is nil")
+    }
+    
+    if len(*tasks) == 0 {
+        return fmt.Errorf("tasks slice is empty")
+    }
+    
+    for index, task := range *tasks {
+        if task.ID == ID {
+            *tasks = append((*tasks)[:index], (*tasks)[index+1:]...)
+            return nil 
+        }
+    }
+    
+    return fmt.Errorf("task with ID %d not found", ID)
 }

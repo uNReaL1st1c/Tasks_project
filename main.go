@@ -14,7 +14,10 @@ var fileName = "tasks.json"
 
 func main() {
 
-	var decision int
+	var (
+		decision int
+		isQuit   bool
+	)
 
 	for {
 		currentMenu()
@@ -31,6 +34,14 @@ func main() {
 		case 4:
 			deleteTask()
 		case 5:
+			isQuit = quitProgram()
+		default:
+			fmt.Println()
+			fmt.Println("Неизвестный тип операции.")
+			fmt.Println()
+		}
+
+		if isQuit {
 			break
 		}
 	}
@@ -63,6 +74,8 @@ func addTask() {
 		service.AddTask(text, &tasks)
 		storage.SaveTasks(fileName, tasks)
 	}
+
+	fmt.Println()
 }
 
 func viewAllTask() {
@@ -101,11 +114,57 @@ func markTaskAsDone() {
 			log.Fatalf("Выбор неопределен %v", err)
 			return
 		}
-		task := service.GetTaskByID(toDoTask, ID)
-		if task.ID != 0 {
+		task := service.GetTaskByID(tasks, ID)
+		if task != nil {
 			task.Done = true
 		}
 	}
+	storage.SaveTasks(fileName, tasks)
+
+	fmt.Println()
 }
 
-func deleteTask() {}
+func deleteTask() {
+
+	tasks, err := storage.LoadTasks(fileName)
+
+	if err != nil {
+		log.Fatalf("Ошибка загрузки: %v.", err)
+		return
+	}
+
+	service.ListTasks(tasks)
+
+	fmt.Print("Введите ID задачи для удаления: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		text := scanner.Text()
+		ID, err := strconv.Atoi(text)
+		if err != nil {
+			log.Fatalf("Выбор неопределен %v", err)
+			return
+		}
+		service.DeleteTask(&tasks, ID)
+	}
+	storage.SaveTasks(fileName, tasks)
+
+	fmt.Println()
+
+
+}
+
+func quitProgram() bool {
+
+	tasks, err := storage.LoadTasks(fileName)
+
+	if err != nil {
+		log.Fatalf("Ошибка загрузки: %v.", err)
+		return false
+	}
+
+	fmt.Println("💾 Сохраняем данные...")
+	storage.SaveTasks(fileName, tasks)
+	fmt.Println("👋 До свидания!")
+
+	return true
+}
