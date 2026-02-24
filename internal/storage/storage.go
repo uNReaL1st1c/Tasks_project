@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/uNReaL1st1c/Tasks_project/src/internal/config"
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/models"
 )
 
@@ -15,7 +16,7 @@ func SaveTasks(filename string, tasks []models.Task) error {
 		return err
 	}
 
-	err = os.WriteFile(filename, data, 0644)
+	err = os.WriteFile(filename, data, config.FilePerm)
 
 	if err != nil {
 		return err

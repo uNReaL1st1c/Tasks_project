@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/uNReaL1st1c/Tasks_project/src/internal/config"
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/service"
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/storage"
 )
-
-var fileName = "tasks.json"
 
 func main() {
 
@@ -52,7 +52,7 @@ func main() {
 }
 
 func currentMenu() {
-	fmt.Println("📋 Менеджер задач v2.0")
+	fmt.Println(config.AppName, config.AppVersion)
 	fmt.Println("======================")
 	fmt.Println("1. ➕ Добавить задачу")
 	fmt.Println("2. 📋 Показать все задачи")
@@ -73,14 +73,14 @@ func addTask() {
 			return
 		}
 
-		tasks, err := storage.LoadTasks(fileName)
+		tasks, err := storage.LoadTasks(config.FileName)
 		if err != nil {
 			fmt.Printf("❌ Ошибка загрузки: %v\n", err)
 			return
 		}
 
 		service.AddTask(text, &tasks)
-		storage.SaveTasks(fileName, tasks)
+		storage.SaveTasks(config.FileName, tasks)
 		fmt.Printf("✅ Задача \"%s\" добавлена (ID: %d)\n",
 			text, len(tasks))
 	}
@@ -89,7 +89,7 @@ func addTask() {
 
 func viewAllTask() {
 
-	tasks, err := storage.LoadTasks(fileName)
+	tasks, err := storage.LoadTasks(config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -104,7 +104,7 @@ func viewAllTask() {
 
 func markTaskAsDone() {
 
-	tasks, err := storage.LoadTasks(fileName)
+	tasks, err := storage.LoadTasks(config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -128,14 +128,14 @@ func markTaskAsDone() {
 			task.Done = true
 		}
 	}
-	storage.SaveTasks(fileName, tasks)
+	storage.SaveTasks(config.FileName, tasks)
 
 	fmt.Println()
 }
 
 func deleteTask() {
 
-	tasks, err := storage.LoadTasks(fileName)
+	tasks, err := storage.LoadTasks(config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -155,7 +155,7 @@ func deleteTask() {
 		}
 		service.DeleteTask(&tasks, ID)
 	}
-	storage.SaveTasks(fileName, tasks)
+	storage.SaveTasks(config.FileName, tasks)
 
 	fmt.Println()
 
@@ -163,7 +163,7 @@ func deleteTask() {
 
 func quitProgram() bool {
 
-	tasks, err := storage.LoadTasks(fileName)
+	tasks, err := storage.LoadTasks(config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -171,7 +171,7 @@ func quitProgram() bool {
 	}
 
 	fmt.Println("💾 Сохраняем данные...")
-	storage.SaveTasks(fileName, tasks)
+	storage.SaveTasks(config.FileName, tasks)
 	fmt.Println("👋 До свидания!")
 
 	return true
