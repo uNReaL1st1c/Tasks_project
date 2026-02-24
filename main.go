@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"taskTracker/src/internal/service"
@@ -15,14 +14,19 @@ var fileName = "tasks.json"
 func main() {
 
 	var (
-		decision int
-		isQuit   bool
+		isQuit bool
+		input  string
 	)
 
 	for {
 		currentMenu()
 		fmt.Print("Ваш выбор: ")
-		fmt.Scan(&decision)
+		fmt.Scan(&input)
+		decision, err := strconv.Atoi(input)
+		if err != nil {
+			fmt.Println("❌ Ошибка: введите число")
+			continue
+		}
 
 		switch decision {
 		case 1:
@@ -64,17 +68,22 @@ func addTask() {
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
 		text := scanner.Text()
-		tasks, err := storage.LoadTasks(fileName)
+		if text == "" {
+			fmt.Println("❌ Название не может быть пустым")
+			return
+		}
 
+		tasks, err := storage.LoadTasks(fileName)
 		if err != nil {
-			log.Fatalf("Ошибка загрузки: %v.", err)
+			fmt.Printf("❌ Ошибка загрузки: %v\n", err)
 			return
 		}
 
 		service.AddTask(text, &tasks)
 		storage.SaveTasks(fileName, tasks)
+		fmt.Printf("✅ Задача \"%s\" добавлена (ID: %d)\n",
+			text, len(tasks))
 	}
-
 	fmt.Println()
 }
 
@@ -83,7 +92,7 @@ func viewAllTask() {
 	tasks, err := storage.LoadTasks(fileName)
 
 	if err != nil {
-		log.Fatalf("Ошибка загрузки: %v.", err)
+		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
 		return
 	}
 
@@ -98,7 +107,7 @@ func markTaskAsDone() {
 	tasks, err := storage.LoadTasks(fileName)
 
 	if err != nil {
-		log.Fatalf("Ошибка загрузки: %v.", err)
+		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
 		return
 	}
 
@@ -111,7 +120,7 @@ func markTaskAsDone() {
 		text := scanner.Text()
 		ID, err := strconv.Atoi(text)
 		if err != nil {
-			log.Fatalf("Выбор неопределен %v", err)
+			fmt.Printf("Выбор неопределен %v", err)
 			return
 		}
 		task := service.GetTaskByID(tasks, ID)
@@ -129,7 +138,7 @@ func deleteTask() {
 	tasks, err := storage.LoadTasks(fileName)
 
 	if err != nil {
-		log.Fatalf("Ошибка загрузки: %v.", err)
+		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
 		return
 	}
 
@@ -141,7 +150,7 @@ func deleteTask() {
 		text := scanner.Text()
 		ID, err := strconv.Atoi(text)
 		if err != nil {
-			log.Fatalf("Выбор неопределен %v", err)
+			fmt.Printf("Выбор неопределен %v", err)
 			return
 		}
 		service.DeleteTask(&tasks, ID)
@@ -150,7 +159,6 @@ func deleteTask() {
 
 	fmt.Println()
 
-
 }
 
 func quitProgram() bool {
@@ -158,7 +166,7 @@ func quitProgram() bool {
 	tasks, err := storage.LoadTasks(fileName)
 
 	if err != nil {
-		log.Fatalf("Ошибка загрузки: %v.", err)
+		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
 		return false
 	}
 

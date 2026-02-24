@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"taskTracker/src/internal/models"
+	"taskTracker/src/internal/models" 
 )
 
 func AddTask(title string, tasks *[]models.Task) {
@@ -16,13 +16,23 @@ func AddTask(title string, tasks *[]models.Task) {
 }
 
 func ListTasks(tasks []models.Task) {
+
+	if len(tasks) == 0 {
+		fmt.Println("📭 Список задач пуст")
+		return
+	}
+
+	doneCount := 0
 	for _, task := range tasks {
 		status := "⏳"
 		if task.Done {
 			status = "✅"
+			doneCount++
 		}
 		fmt.Printf("%d. %s %s\n", task.ID, status, task.Title)
 	}
+	fmt.Printf("\n📊 Итого: ✅ %d выполнено, ⏳ %d осталось\n",
+		doneCount, len(tasks)-doneCount)
 }
 
 func ToDoTasks(tasks []models.Task) []models.Task {
