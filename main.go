@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/config"
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/service"
@@ -38,6 +39,11 @@ func main() {
 		case 4:
 			deleteTask()
 		case 5:
+			startWorkWithTask()
+		case 6:
+		case 7:
+
+		case 8:
 			isQuit = quitProgram()
 		default:
 			fmt.Println()
@@ -58,7 +64,10 @@ func currentMenu() {
 	fmt.Println("2. 📋 Показать все задачи")
 	fmt.Println("3. ✅ Отметить задачу как выполненную")
 	fmt.Println("4. ❌ Удалить задачу")
-	fmt.Println("5. 🚪 Выйти")
+	fmt.Println("5. 🍅 Начать работу над задачей (таймер)")
+	fmt.Println("6. ⏹ Остановить выполнение задачи")
+	fmt.Println("7. 📊 Статус выполнения")
+	fmt.Println("8. 🚪 Выйти")
 	fmt.Println()
 }
 
@@ -186,4 +195,61 @@ func quitProgram() bool {
 	fmt.Println("👋 До свидания!")
 
 	return true
+}
+
+func startWorkWithTask() {
+
+	tasks, err := storage.LoadTasks(config.FileName)
+
+	if err != nil {
+		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
+		return
+	}
+
+	toDoTask := service.ToDoTasks(tasks)
+	service.ListTasks(toDoTask)
+
+	fmt.Print("Введите ID задачи для отметки: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		text := scanner.Text()
+		ID, err := strconv.Atoi(text)
+		if err != nil {
+			fmt.Printf("Выбор неопределен %v", err)
+			return
+		}
+
+		task := service.GetTaskByID(tasks, ID)
+		if task == nil {
+			fmt.Println("❌ Задача не найдена")
+			return
+		}
+
+		fmt.Printf("▶️ Запущен таймер для задачи \"%s\" (10 секунд)\n", task.Title)
+
+		doneChannel := make(chan int)
+
+		go func(taskID int) {
+			
+			time.Sleep(10 * time.Second)
+			task.Done = true
+			doneChannel <- taskID
+		}(task.ID)
+
+		go func() {
+		for {
+			select {
+			case ID = <-doneChannel:
+				fmt.Printf("Задача %d успешно выполнена\n", ID)
+				storage.SaveTasks(config.FileName, tasks)
+				return
+			default:
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+		}()
+	}
+
+	fmt.Println()
+
 }

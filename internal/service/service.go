@@ -76,18 +76,27 @@ func DeleteTask(tasks *[]models.Task, ID int) error {
 	return fmt.Errorf("task with ID %d not found", ID)
 }
 
-func generateID(tasks *[]models.Task) int {
+func generateID[T models.Identifiable](items *[]T) int {
 
-	if tasks == nil || len(*tasks) == 0 {
+	if items == nil || len(*items) == 0 {
 		return 1
 	}
 
 	maxID := 0
-	for _, task := range *tasks {
-		if task.ID > maxID {
-			maxID = task.ID
+	for _, item := range *items {
+		ID := item.GetID()
+		if ID > maxID {
+			maxID = ID
 		}
 	}
 
 	return maxID + 1
+}
+
+func AddActiveTask(title string, activeTasks *[]models.ActiveTask) {
+	activeTask := models.ActiveTask{
+		ID:    generateID(activeTasks),
+		Title: title,
+	}
+	*activeTasks = append(*activeTasks, activeTask)
 }
