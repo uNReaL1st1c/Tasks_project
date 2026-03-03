@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,12 +14,19 @@ import (
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/storage"
 )
 
+var (
+    activeTasks   = make(map[int]context.CancelFunc)  // для остановки таймеров
+    doneChannel   = make(chan int)                    // глобальный канал
+)
+
 func main() {
 
 	var (
 		isQuit bool
 		input  string
 	)
+
+	go handleCompletedTasks()
 
 	for {
 		currentMenu()
@@ -42,6 +50,7 @@ func main() {
 		case 5:
 			startWorkWithTask()
 		case 6:
+			stopWorkWithTask()
 		case 7:
 			activeTaskInProgress()
 		case 8:
@@ -56,6 +65,29 @@ func main() {
 			break
 		}
 	}
+}
+
+func handleCompletedTasks() {
+    for completedID := range doneChannel {
+
+        tasks, err := storage.LoadTasks[models.Task](config.FileName)
+        if err != nil {
+            fmt.Printf("❌ Ошибка загрузки: %v\n", err)
+            continue
+        }
+        
+        for i := range tasks {
+            if tasks[i].ID == completedID {
+                tasks[i].Done = true
+                fmt.Printf("\n✅ Задача \"%s\" выполнена!\n", tasks[i].Title)
+                break
+            }
+        }
+        
+        storage.SaveTasks(config.FileName, tasks)
+        
+        delete(activeTasks, completedID)
+    }
 }
 
 func currentMenu() {
@@ -199,84 +231,121 @@ func quitProgram() bool {
 }
 
 func startWorkWithTask() {
+    tasks, err := storage.LoadTasks[models.Task](config.FileName)
+    if err != nil {
+        fmt.Printf("❌ Ошибка загрузки: %v\n", err)
+        return
+    }
 
-	tasks, err := storage.LoadTasks[models.Task](config.FileName)
+    toDoTask := service.ToDoTasks(tasks)
+    if len(toDoTask) == 0 {
+        fmt.Println("📭 Нет задач для выполнения")
+        return
+    }
+    
+    service.ListTasks(toDoTask)
 
-	if err != nil {
-		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
-		return
-	}
+    fmt.Print("Введите ID задачи: ")
+    scanner := bufio.NewScanner(os.Stdin)
+    if !scanner.Scan() {
+        return
+    }
+    
+    text := scanner.Text()
+    ID, err := strconv.Atoi(text)
+    if err != nil {
+        fmt.Printf("❌ Ошибка: %v\n", err)
+        return
+    }
 
-	toDoTask := service.ToDoTasks(tasks)
-	service.ListTasks(toDoTask)
+    if _, exists := activeTasks[ID]; exists {
+        fmt.Printf("❌ Задача %d уже выполняется\n", ID)
+        return
+    }
 
-	fmt.Print("Введите ID задачи для отметки: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		text := scanner.Text()
-		ID, err := strconv.Atoi(text)
-		if err != nil {
-			fmt.Printf("Выбор неопределен %v", err)
-			return
-		}
+    ctx, cancel := context.WithCancel(context.Background())
+    activeTasks[ID] = cancel
 
-		task := service.GetTaskByID(tasks, ID)
-		if task == nil {
-			fmt.Println("❌ Задача не найдена")
-			return
-		}
+    activeTasksList, _ := storage.LoadTasks[models.ActiveTask](config.FileNameForActiveTask)
+    
+    task := service.GetTaskByID(tasks, ID)
+    if task == nil {
+        fmt.Println("❌ Задача не найдена")
+        return
+    }
 
-		fmt.Printf("▶️ Запущен таймер для задачи \"%s\" (10 секунд)\n", task.Title)
+    service.AddActiveTask(task.ID, task.Title, &activeTasksList)
+    storage.SaveTasks(config.FileNameForActiveTask, activeTasksList)
 
-		doneChannel := make(chan int)
+    fmt.Printf("▶️ Запущен таймер для задачи \"%s\" (10 секунд)\n", task.Title)
 
-		go func(taskID int) {
-
-			activeTasks := []models.ActiveTask{}
-			service.AddActiveTask(task.GetID(), task.Title, &activeTasks)
-			storage.SaveTasks(config.FileNameForActiveTask, activeTasks)
-
-			time.Sleep(10 * time.Second)
-			task.Done = true
-			doneChannel <- taskID
-		}(task.ID)
-
-		go func() {
-		for {
-			select {
-			case ID = <-doneChannel:
-				fmt.Printf("Задача %d успешно выполнена\n", ID)
-				activeTask, err := storage.LoadTasks[models.ActiveTask](config.FileNameForActiveTask)
-
-				if err != nil {
-					fmt.Printf("❌ Ошибка загрузки: %v\n", err)
-					return
-				}
-
-				service.DeleteTask(&activeTask, ID)
-				storage.SaveTasks(config.FileNameForActiveTask, activeTask)
-				storage.SaveTasks(config.FileName, tasks)
-				return
-			default:
-				time.Sleep(100 * time.Millisecond)
-			}
-		}
-		}()
-	}
-
-	fmt.Println()
-
+    go func(taskID int, cancelFunc context.CancelFunc) {
+        defer cancelFunc()          
+        defer delete(activeTasks, taskID)
+        
+        select {
+        case <-time.After(10 * time.Second):
+            doneChannel <- taskID
+        case <-ctx.Done():
+            fmt.Printf("\n⏹ Задача %d остановлена\n", taskID)
+            return
+        }
+    }(ID, cancel)
 }
 
 func activeTaskInProgress() {
+    activeTasksList, err := storage.LoadTasks[models.ActiveTask](config.FileNameForActiveTask)
+    if err != nil {
+        if os.IsNotExist(err) {
+            fmt.Println("📭 Нет активных задач")
+            return
+        }
+        fmt.Printf("❌ Ошибка загрузки: %v\n", err)
+        return
+    }
 
-	tasks, err := storage.LoadTasks[models.ActiveTask](config.FileNameForActiveTask)
+    if len(activeTasksList) == 0 {
+        fmt.Println("📭 Нет активных задач")
+        return
+    }
 
-	if err != nil {
-		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
-		return
-	}
+    fmt.Println("\n📊 Активные задачи:")
+    for _, task := range activeTasksList {
+        fmt.Printf("  %d. 🍅 %s\n", task.ID, task.Title)
+    }
+    fmt.Printf("🔢 Всего: %d\n\n", len(activeTasksList))
+}
 
-	service.ListActiveTasks(tasks)
+func stopWorkWithTask() {
+    activeTasksList, err := storage.LoadTasks[models.ActiveTask](config.FileNameForActiveTask)
+    if err != nil || len(activeTasksList) == 0 {
+        fmt.Println("📭 Нет активных задач для остановки")
+        return
+    }
 
+    service.ListActiveTasks(activeTasksList)
+
+    fmt.Print("Введите ID задачи для остановки: ")
+    scanner := bufio.NewScanner(os.Stdin)
+    if !scanner.Scan() {
+        return
+    }
+    
+    text := scanner.Text()
+    ID, err := strconv.Atoi(text)
+    if err != nil {
+        fmt.Printf("❌ Ошибка: %v\n", err)
+        return
+    }
+
+    if cancel, exists := activeTasks[ID]; exists {
+        cancel()
+        
+        service.DeleteTask(&activeTasksList, ID)
+        storage.SaveTasks(config.FileNameForActiveTask, activeTasksList)
+        
+        fmt.Printf("⏹ Задача %d остановлена\n", ID)
+    } else {
+        fmt.Printf("❌ Задача %d не выполняется\n", ID)
+    }
 }
