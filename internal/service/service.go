@@ -57,7 +57,7 @@ func GetTaskByID(tasks []models.Task, ID int) *models.Task {
 	return nil
 }
 
-func DeleteTask(tasks *[]models.Task, ID int) error {
+func DeleteTask[T models.Identifiable](tasks *[]T, ID int) error {
 	if tasks == nil {
 		return fmt.Errorf("tasks slice is nil")
 	}
@@ -67,7 +67,8 @@ func DeleteTask(tasks *[]models.Task, ID int) error {
 	}
 
 	for index, task := range *tasks {
-		if task.ID == ID {
+		taskID := task.GetID()
+		if taskID == ID {
 			*tasks = append((*tasks)[:index], (*tasks)[index+1:]...)
 			return nil
 		}
@@ -93,10 +94,22 @@ func generateID[T models.Identifiable](items *[]T) int {
 	return maxID + 1
 }
 
-func AddActiveTask(title string, activeTasks *[]models.ActiveTask) {
+func AddActiveTask(ID int, title string, activeTasks *[]models.ActiveTask) {
 	activeTask := models.ActiveTask{
-		ID:    generateID(activeTasks),
+		ID:    ID,
 		Title: title,
 	}
 	*activeTasks = append(*activeTasks, activeTask)
+}
+
+func ListActiveTasks(activeTasks []models.ActiveTask) {
+
+	if len(activeTasks) == 0 {
+		fmt.Println("📭 Список задач пуст")
+		return
+	}
+
+	for _, task := range activeTasks {
+		fmt.Printf("%d. %s\n", task.ID, task.Title)
+	}
 }

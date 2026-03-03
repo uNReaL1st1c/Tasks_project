@@ -5,10 +5,9 @@ import (
 	"os"
 
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/config"
-	"github.com/uNReaL1st1c/Tasks_project/src/internal/models"
 )
 
-func SaveTasks(filename string, tasks []models.Task) error {
+func SaveTasks[T any](filename string, tasks []T) error {
 
 	data, err := json.Marshal(tasks)
 
@@ -26,7 +25,7 @@ func SaveTasks(filename string, tasks []models.Task) error {
 
 }
 
-func LoadTasks(filename string) ([]models.Task, error) {
+func LoadTasks[T any](filename string) ([]T, error) {
 
 	data, err := os.ReadFile(filename)
 
@@ -34,7 +33,7 @@ func LoadTasks(filename string) ([]models.Task, error) {
 		return nil, err
 	}
 
-	var tasks []models.Task
+	var tasks []T
 
 	if len(data) == 0 {
 		return tasks, nil

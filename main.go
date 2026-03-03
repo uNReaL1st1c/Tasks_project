@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/config"
+	"github.com/uNReaL1st1c/Tasks_project/src/internal/models"
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/service"
 	"github.com/uNReaL1st1c/Tasks_project/src/internal/storage"
 )
@@ -42,7 +43,7 @@ func main() {
 			startWorkWithTask()
 		case 6:
 		case 7:
-
+			activeTaskInProgress()
 		case 8:
 			isQuit = quitProgram()
 		default:
@@ -82,7 +83,7 @@ func addTask() {
 			return
 		}
 
-		tasks, err := storage.LoadTasks(config.FileName)
+		tasks, err := storage.LoadTasks[models.Task](config.FileName)
 		if err != nil {
 			fmt.Printf("❌ Ошибка загрузки: %v\n", err)
 			return
@@ -98,7 +99,7 @@ func addTask() {
 
 func viewAllTask() {
 
-	tasks, err := storage.LoadTasks(config.FileName)
+	tasks, err := storage.LoadTasks[models.Task](config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -113,7 +114,7 @@ func viewAllTask() {
 
 func markTaskAsDone() {
 
-	tasks, err := storage.LoadTasks(config.FileName)
+	tasks, err := storage.LoadTasks[models.Task](config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -147,7 +148,7 @@ func markTaskAsDone() {
 
 func deleteTask() {
 
-	tasks, err := storage.LoadTasks(config.FileName)
+	tasks, err := storage.LoadTasks[models.Task](config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -183,7 +184,7 @@ func deleteTask() {
 
 func quitProgram() bool {
 
-	tasks, err := storage.LoadTasks(config.FileName)
+	tasks, err := storage.LoadTasks[models.Task](config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -199,7 +200,7 @@ func quitProgram() bool {
 
 func startWorkWithTask() {
 
-	tasks, err := storage.LoadTasks(config.FileName)
+	tasks, err := storage.LoadTasks[models.Task](config.FileName)
 
 	if err != nil {
 		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
@@ -230,7 +231,11 @@ func startWorkWithTask() {
 		doneChannel := make(chan int)
 
 		go func(taskID int) {
-			
+
+			activeTasks := []models.ActiveTask{}
+			service.AddActiveTask(task.GetID(), task.Title, &activeTasks)
+			storage.SaveTasks(config.FileNameForActiveTask, activeTasks)
+
 			time.Sleep(10 * time.Second)
 			task.Done = true
 			doneChannel <- taskID
@@ -241,6 +246,15 @@ func startWorkWithTask() {
 			select {
 			case ID = <-doneChannel:
 				fmt.Printf("Задача %d успешно выполнена\n", ID)
+				activeTask, err := storage.LoadTasks[models.ActiveTask](config.FileName)
+
+				if err != nil {
+					fmt.Printf("❌ Ошибка загрузки: %v\n", err)
+					return
+				}
+
+				service.DeleteTask(&activeTask, ID)
+				storage.SaveTasks(config.FileNameForActiveTask, activeTask)
 				storage.SaveTasks(config.FileName, tasks)
 				return
 			default:
@@ -251,5 +265,18 @@ func startWorkWithTask() {
 	}
 
 	fmt.Println()
+
+}
+
+func activeTaskInProgress() {
+
+	tasks, err := storage.LoadTasks[models.ActiveTask](config.FileNameForActiveTask)
+
+	if err != nil {
+		fmt.Printf("❌ Ошибка загрузки: %v\n", err)
+		return
+	}
+
+	service.ListActiveTasks(tasks)
 
 }
