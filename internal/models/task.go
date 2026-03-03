@@ -1,7 +1,5 @@
 package models
 
-import "context"
-
 type Identifiable interface {
 	GetID() int
 }
@@ -15,7 +13,7 @@ type Task struct {
 type ActiveTask struct {
 	ID     int
 	Title  string
-	Cancel context.CancelFunc
+	Cancel string
 }
 
 func (task Task) GetID() int { return task.ID }

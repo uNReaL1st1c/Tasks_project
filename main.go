@@ -246,7 +246,7 @@ func startWorkWithTask() {
 			select {
 			case ID = <-doneChannel:
 				fmt.Printf("Задача %d успешно выполнена\n", ID)
-				activeTask, err := storage.LoadTasks[models.ActiveTask](config.FileName)
+				activeTask, err := storage.LoadTasks[models.ActiveTask](config.FileNameForActiveTask)
 
 				if err != nil {
 					fmt.Printf("❌ Ошибка загрузки: %v\n", err)
