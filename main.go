@@ -15,8 +15,8 @@ import (
 )
 
 var (
-    activeTasks   = make(map[int]context.CancelFunc)  // для остановки таймеров
-    doneChannel   = make(chan int)                    // глобальный канал
+    activeTasks   = make(map[int]context.CancelFunc)
+    doneChannel   = make(chan int)                    
 )
 
 func main() {
